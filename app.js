@@ -1,246 +1,258 @@
-const express = require("express");
-const User = require("./user.js");
+// Init variables
 const Task = require("./task.js");
-var fs = require("fs");
+const session = require("express-session");
+const passport = require("passport");
+const express = require("express");
+const mongoose = require("mongoose");
+const passportLocalMongoose = require("passport-local-mongoose");
 bodyParser = require("body-parser");
+mongoose.set('useFindAndModify', false);
 
-/* Verification value */
-const AUTH_VALUE = "123";
+// Init dotenv
+require("dotenv").config();
 
-/* Port running on */
-const port = 3000;
-
-/* Init app */
+// Init App with set / use functions
 const app = express();
 app.set("view engine", "ejs");
 app.use(express.static("public"));
-app.use(bodyParser.urlencoded({ extended: true }));
+const port = 3000;
 app.listen(port, function () {
-  console.log(" server is active and running on " + port);
+  console.log(" Server is active and running " + port);
 });
 
+// Init App
 
+app.use(
+  session({
+    secret: process.env.SECRET,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
-/* NEW USERS FOR TESTING PURPOSE */
+// setting up mongoose database
 
-function createJsonString() {
-  var jsonStoreOjbect = {
-    Users: [],
-    Tasks: [],
-  };
+mongoose.connect("mongodb://localhost:27017/todoAppDB", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
-  jsonStoreOjbect.Users.push({
-    username: "test123@abc.com",
-    password: "password1",
-  });
-  jsonStoreOjbect.Users.push({
-    username: "test2@abc.com",
-    password: "password2",
-  });
+// Setting up mongoose validation
 
-  jsonStoreOjbect.Tasks.push({
-    id: 10,
-    name: "claimed by testuser1 and unfinished",
-    owner: "test123@abc.com",
-    creator: "testuser1",
-    done: false,
-    cleared: false,
-  });
-  jsonStoreOjbect.Tasks.push({
-    id: 20,
-    name: "claimed by testuser2 and unfinished",
-    owner: "test2@abc.com",
-    creator: "test123@abc.com",
-    done: false,
-    cleared: false,
-  });
-  jsonStoreOjbect.Tasks.push({
-    id: 30,
-    name: "claimed by testuser1 and finished",
-    owner: "test123@abc.com",
-    creator: "test2@abc.com",
-    done: true,
-    cleared: false,
-  });
-  jsonStoreOjbect.Tasks.push({
-    id: 40,
-    name: "claimed by testuser2 and finished",
-    owner: "test2@abc.com",
-    creator: "test2@abc.com",
-    done: true,
-    cleared: false,
-  });
-  jsonStoreOjbect.Tasks.push({
-    id: 50,
-    name: "unclaimed",
-    creator: "test2@abc.com",
-    done: false,
-    cleared: false,
-  });
+const userSchema = new mongoose.Schema({
+  username: String,
+  password: String,
+});
+userSchema.plugin(passportLocalMongoose);
+const User = new mongoose.model("User", userSchema);
 
-  var jsonString = JSON.stringify(jsonStoreOjbect);
-  return jsonString;
-}
+const taskSchema = new mongoose.Schema({
+  name: String,
+  owner: userSchema,
+  creator: userSchema,
+  done: Boolean,
+  cleared: Boolean,
+});
 
-createFileWX("./todo.json");
-var jsonDatabase = JSON.parse(fs.readFileSync("./todo.json", "utf8"));
+const assignTasks = new mongoose.model("TaskManager", taskSchema);
 
-/* Login route */
+passport.use(User.createStrategy());
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+/* Verification value code required for signup */
+const AUTH_VALUE = "123";
+
+/* Managing routes */
+
 app.get("/", function (req, res) {
-  res.render("login", { errorLogin: false, errorSignup: false });
+  if (req.user) {
+    res.redirect(307, "/todoApp");
+  } else {
+    res.render("login", { errorLogin: false, errorSignup: false });
+  }
 });
 
-/*Sign up and verification route */
+/* Register new user functionality */
 app.post("/register", function (req, res) {
   let auth = req.body.authentication;
-  let email = req.body.email;
-  let password = req.body.password;
-
-  for (var user of jsonDatabase["Users"]) {
-    if (email == user.username) {
-      res.render("login", { errorLogin: false, errorSignup: true });
-      return;
-    }
-  }
-  if (auth != AUTH_VALUE) {
-    res.render("login", { errorLogin: false, errorSignup: true });
+  if (auth == AUTH_VALUE) {
+    User.register({ username: req.body.username }, req.body.password, function (
+      err
+    ) {
+      if (err) {
+        console.log(err + " THIS");
+        res.render("login", { errorLogin: false, errorSignup: true });
+      } else {
+        passport.authenticate("local")(req, res, function () {
+          res.redirect(307, "/todoApp");
+        });
+      }
+    });
   } else {
-    userAdded = new User(email, password);
-    jsonDatabase["Users"].push(userAdded);
-    fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-    res.render("todo", { email: email, taskDatabase: jsonDatabase["Tasks"] });
+    res.render("login", { errorLogin: false, errorSignup: true });
   }
 });
 
-/* Sign In and navigate's  to todo list page */
-app.post("/login", function (req, res) {
-  var email = req.body.email;
-  var password = req.body.password;
-  for (var user of jsonDatabase["Users"]) {
-    if (email == user.username) {
-      if (password == user.password) {
-        res.redirect(307, "/todo");
-        return;
+
+/* navigate to todoApp page functionality with authentication */
+app.post("/todoApp", function (req, res) {
+  var email = req.user.username;
+  assignTasks.find({}, function (err, results) {
+    if (err) {
+      console.log(err);
+      console.log(results);
+    } else {
+      tasks = results;
+      if (req.isAuthenticated()) {
+        res.render("todoApp", { email: email, dbTasks: tasks });
       } else {
-        signInError = true;
+        res.redirect("/login");
       }
     }
-  }
-  res.render("login", { errorLogin: true, errorSignup: false });
+  });
 });
 
-/* todo list route */
-app.post("/todo", function (req, res) {
-  var email = req.body.email;
-  res.render("todo", { email: email, taskDatabase: jsonDatabase["Tasks"] });
+/* Assign task to the user */
+
+app.get("/todoApp", function (req, res) {
+  if (req.user) {
+    var email = req.user.username;
+    assignTasks.find({}, function (err, results) {
+      if (err) {
+        console.log(err);
+        console.log(results);
+      } else {
+        tasks = results;
+        if (req.isAuthenticated()) {
+          res.render("todoApp", { email: email, dbTasks: tasks });
+        } else {
+          res.redirect("/");
+        }
+      }
+    });
+  } else {
+    res.redirect("/");
+  }
 });
 
+/* search unfinish task by id */
 
-
-/*Function to create files */ 
-function createFileWX(filename) {
-  json = createJsonString();
-  try {
-    fs.writeFileSync(filename, json, { flag: "wx" });
-  } catch (errs) {}
-}
-
-/* ID matching function */
-function findJsonIndex(json, id) {
-  for (var i = 0; i < json.length; i++) {
-    if (json[i].id == id) {
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-
-/*Unfinish tasks */
 app.post("/unfinish", function (req, res) {
   var id = req.body.postID;
-  var email = req.body.email;
-  for (var i = 0; i < jsonDatabase["Tasks"].length; i++) {
-    if (jsonDatabase["Tasks"][i].id == id) {
-      jsonDatabase["Tasks"][i].done = false;
+  assignTasks.findByIdAndUpdate(id, { $set: { done: false } }, function (err, docs) {
+    if (err) {
+      console.log(err);
+    } else {
+      res.redirect(307, "/todoApp");
     }
-  }
-  fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-  res.redirect(307, "/todo");
+  });
 });
+
+/* Completed or abandon task functionailty */
 
 app.post("/abandonorcomplete", function (req, res) {
   var id = req.body.postID;
   var abandon = req.body.abandon;
-  var email = req.body.email;
- 
-
-  for (var i = 0; i < jsonDatabase["Tasks"].length; i++) {
-    if (jsonDatabase["Tasks"][i].id == id) {
-      var index = i;
-    }
-  }
-
-  /*logic for abandon */
+  //if abandon is set then we abandon, else we know we are changing the done condition
   if (abandon) {
-    delete jsonDatabase["Tasks"][index].owner;
+    var id = req.body.postID;
+    assignTasks.findByIdAndUpdate(id, { $unset: { owner: 1 } }, function (err, docs) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect(307, "/todoApp");
+      }
+    });
   } else {
-    jsonDatabase["Tasks"][index].done = true;
+    assignTasks.findByIdAndUpdate(id, { $set: { done: true } }, function (err, docs) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect(307, "/todoApp");
+      }
+    });
   }
-
-  fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-  res.redirect(307, "/todo");
 });
 
-/*task claims for */ 
+
+/* Task to claim functionality */
 app.post("/claim", function (req, res) {
   var id = req.body.postID;
-  var email = req.body.currentUser;
-  var index = findJsonIndex(jsonDatabase["Tasks"], id);
-  jsonDatabase["Tasks"][index].owner = email;
-  fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-  res.render("todo", { email: email, taskDatabase: jsonDatabase["Tasks"] }); 
+
+  assignTasks.findByIdAndUpdate(id, { $set: { owner: req.user } }, function (
+    err
+  ) {
+    if (err) {
+      console.log(err);
+    } else {
+      res.redirect(307, "/todoApp");
+    }
+  });
 });
 
-/*Adds task thus claims */
+/* Task claim functionality */
 app.post("/addtask", function (req, res) {
   let entry = req.body.newTodo;
-  let user = req.body.currentUser;
+  let user = req.user;
+  console.log(user);
+  const task = new assignTasks({
+    name: entry,
+    owner: user,
+    creator: user,
+    done: false,
+    cleared: false,
+  });
 
-  let jsonSize = jsonDatabase["Tasks"].length;
-
-  let nextIndex = jsonDatabase["Tasks"][jsonSize - 1]["id"] + 1;
-
-  taskAdded = new Task(nextIndex, entry, user, user, false, false);
-  jsonDatabase["Tasks"].push(taskAdded);
-  fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-  res.render("todo", { email: user, taskDatabase: jsonDatabase["Tasks"] }); //would be better with sessions vars
+  task.save(function (err) {
+    if (err) console.log(err);
+  });
+  res.redirect(307, "/todoApp");
 });
 
-/*Remove all the selected tasks */
+
+/* Removes all the tasks for user that are checked */
 app.post("/purge", function (req, res) {
-  let user = req.body.currentUser;
-
-  for (var i = 0; i < jsonDatabase["Tasks"].length; i++) {
-    if (
-      jsonDatabase["Tasks"][i].owner == user &&
-      jsonDatabase["Tasks"][i].done == true
-    ) {
-      jsonDatabase["Tasks"][i].cleared = true;
+  assignTasks.updateMany(
+    { owner: req.user, done: true },
+    { $set: { cleared: true } },
+    function (err, docs) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect(307, "/todoApp");
+      }
     }
-  }
-
-  fs.writeFileSync("./todo.json", JSON.stringify(jsonDatabase));
-  res.render("todo", { email: user, taskDatabase: jsonDatabase["Tasks"] });
+  );
 });
 
-/* logout redirect */
+
+/* Login functionality */
+app.post("/login", function (req, res, next) {
+  passport.authenticate("local", function (err, user, info) {
+    if (err) {
+      return next(err);
+    }
+    if (!user) {
+      console.log(info);
+      return res.render("login", { errorLogin: true, errorSignup: false });
+    }
+    req.logIn(user, function (err) {
+      if (err) {
+        return next(err);
+      }
+      return res.redirect(307, "/todoApp");
+    });
+  })(req, res, next);
+});
+
+
+/* Logout functionality */
 app.get("/logout", function (req, res) {
-  res.redirect(307, "/");
+  req.logout();
+  res.redirect("/");
 });
-
-
-
-

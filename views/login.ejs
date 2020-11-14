@@ -30,7 +30,7 @@
           <form class="col-md-8 offset-md-1" action="/login" method="POST">
             <p class="h3"></p>
             <div class="form-group">
-              <input type="email" class="form-control mb-3 mt-3" id="loginEmail" placeholder="Email" name="email" />
+              <input type="username" class="form-control mb-3 mt-3" id="loginEmail" placeholder="Email" name="username" />
 
               <input type="password" class="form-control mb-3 mt-3" id="loginEmail" placeholder="Password"
                 name="password" />
@@ -56,8 +56,8 @@
           <form class="col-md-8 offset-md-1" method="POST" action="/register">
             <p class="h3"></p>
             <div class="form-group">
-              <input type="email" class="form-control mb-3 mt-3" id="signUpEmail" placeholder="Email" name="email" />
-              <input type="password" class="form-control mb-3 mt-3" id="signUpEmail" placeholder="Password"
+              <input required="required" type="email" class="form-control mb-3 mt-3" id="signUpEmail" placeholder="Email" name="username" />
+              <input required="required" type="password" class="form-control mb-3 mt-3" id="signUpEmail" placeholder="Password"
                 name="password" />
               <input type="password" class="form-control mb-3 mt-3" id="signUpAuth" placeholder="Authentication"
                 name="authentication" />
