@@ -1,0 +1,29 @@
+{
+  "name": "controller",
+  "version": "1.0.0",
+  "description": "lab controller",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AliHaidry/controller.git"
+  },
+  "author": "Syed Muhammad Ali Haidry",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AliHaidry/controller/issues"
+  },
+  "homepage": "https://github.com/AliHaidry/controller#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "consolidate": "^0.16.0",
+    "ejs": "^3.1.5",
+    "ejs-lint": "^1.1.0",
+    "express": "^4.17.1",
+    "html": "^1.0.0",
+    "swig": "^1.4.2"
+  }
+}

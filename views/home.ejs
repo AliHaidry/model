@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to EJS</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <h1>This is an EJS page !</h1>
+    <h2><%= myString %></h2>
+    <% if (listType === "ul") {%>
+    <ul>
+        <li>First</li>
+        <li>Second</li>
+        <li>Third</li>
+    </ul>
+<% } else { %> 
+    <ol>
+        <li>First</li>
+        <li>Second</li>
+        <li>Third</li>
+    </ol>
+<% } %>
+    <ul>
+        <% for (var item of myArray) { %>
+        <li><%= item %> </li>
+       <% } %>
+    </ul>
+</body>
+</html>
