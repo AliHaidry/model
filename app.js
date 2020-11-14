@@ -1,12 +1,11 @@
 // Init variables
-const Task = require("./task.js");
 const session = require("express-session");
 const passport = require("passport");
 const express = require("express");
 const mongoose = require("mongoose");
 const passportLocalMongoose = require("passport-local-mongoose");
 bodyParser = require("body-parser");
-mongoose.set('useFindAndModify', false);
+mongoose.set("useFindAndModify", false);
 
 // Init dotenv
 require("dotenv").config();
@@ -43,29 +42,29 @@ mongoose.connect("mongodb://localhost:27017/todoAppDB", {
 
 // Setting up mongoose validation
 
-const userSchema = new mongoose.Schema({
+const todoSchema = new mongoose.Schema({
   username: String,
   password: String,
 });
-userSchema.plugin(passportLocalMongoose);
-const User = new mongoose.model("User", userSchema);
+todoSchema.plugin(passportLocalMongoose);
+const appUser = new mongoose.model("User", todoSchema);
 
-const taskSchema = new mongoose.Schema({
+const taskLayout = new mongoose.Schema({
   name: String,
-  owner: userSchema,
-  creator: userSchema,
+  owner: todoSchema,
+  creator: todoSchema,
   done: Boolean,
   cleared: Boolean,
 });
 
-const assignTasks = new mongoose.model("TaskManager", taskSchema);
+const assignTasks = new mongoose.model("TaskManager", taskLayout);
 
-passport.use(User.createStrategy());
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+passport.use(appUser.createStrategy());
+passport.serializeUser(appUser.serializeUser());
+passport.deserializeUser(appUser.deserializeUser());
 
 /* Verification value code required for signup */
-const AUTH_VALUE = "123";
+const verifyValue = "555";
 
 /* Managing routes */
 
@@ -79,25 +78,28 @@ app.get("/", function (req, res) {
 
 /* Register new user functionality */
 app.post("/register", function (req, res) {
-  let auth = req.body.authentication;
-  if (auth == AUTH_VALUE) {
-    User.register({ username: req.body.username }, req.body.password, function (
-      err
-    ) {
-      if (err) {
-        console.log(err + " THIS");
-        res.render("login", { errorLogin: false, errorSignup: true });
-      } else {
-        passport.authenticate("local")(req, res, function () {
-          res.redirect(307, "/todoApp");
-        });
+  let check = req.body.authentication;
+  if (check == verifyValue) {
+    appUser.register(
+      { username: req.body.username },
+      req.body.password,
+      function (err) {
+        if (err) {
+          console.log(err + " Access not granted");
+          res.render("login", { errorLogin: false, errorSignup: true });
+        } else {
+          //authenticate()'s function signature is standard Connect middleware,
+          //which makes it convenient to use as route middleware in Express applications
+          passport.authenticate("local")(req, res, function () {
+            res.redirect(307, "/todoApp");
+          });
+        }
       }
-    });
+    );
   } else {
     res.render("login", { errorLogin: false, errorSignup: true });
   }
 });
-
 
 /* navigate to todoApp page functionality with authentication */
 app.post("/todoApp", function (req, res) {
@@ -108,6 +110,7 @@ app.post("/todoApp", function (req, res) {
       console.log(results);
     } else {
       tasks = results;
+      //For any request you can check if a user is authenticated or not using this method
       if (req.isAuthenticated()) {
         res.render("todoApp", { email: email, dbTasks: tasks });
       } else {
@@ -128,6 +131,7 @@ app.get("/todoApp", function (req, res) {
         console.log(results);
       } else {
         tasks = results;
+        //For any request you can check if a user is authenticated or not using this method
         if (req.isAuthenticated()) {
           res.render("todoApp", { email: email, dbTasks: tasks });
         } else {
@@ -144,7 +148,9 @@ app.get("/todoApp", function (req, res) {
 
 app.post("/unfinish", function (req, res) {
   var id = req.body.postID;
-  assignTasks.findByIdAndUpdate(id, { $set: { done: false } }, function (err, docs) {
+  //By default, findByIdAndUpdate() returns the document as it was before update was applied
+  //Mongoose will wrap update in $set
+  assignTasks.findByIdAndUpdate(id, { $set: { done: false } }, function (err) {
     if (err) {
       console.log(err);
     } else {
@@ -158,10 +164,11 @@ app.post("/unfinish", function (req, res) {
 app.post("/abandonorcomplete", function (req, res) {
   var id = req.body.postID;
   var abandon = req.body.abandon;
-  //if abandon is set then we abandon, else we know we are changing the done condition
   if (abandon) {
     var id = req.body.postID;
-    assignTasks.findByIdAndUpdate(id, { $unset: { owner: 1 } }, function (err, docs) {
+    //By default, findByIdAndUpdate() returns the document as it was before update was applied
+    //The $unset operator deletes a particular field
+    assignTasks.findByIdAndUpdate(id, { $unset: { owner: 1 } }, function (err) {
       if (err) {
         console.log(err);
       } else {
@@ -169,7 +176,9 @@ app.post("/abandonorcomplete", function (req, res) {
       }
     });
   } else {
-    assignTasks.findByIdAndUpdate(id, { $set: { done: true } }, function (err, docs) {
+    //By default, findByIdAndUpdate() returns the document as it was before update was applied
+    //Mongoose will wrap update in $set
+    assignTasks.findByIdAndUpdate(id, { $set: { done: true } }, function (err) {
       if (err) {
         console.log(err);
       } else {
@@ -179,11 +188,11 @@ app.post("/abandonorcomplete", function (req, res) {
   }
 });
 
-
 /* Task to claim functionality */
 app.post("/claim", function (req, res) {
   var id = req.body.postID;
-
+  //By default, findByIdAndUpdate() returns the document as it was before update was applied
+  //Mongoose will wrap update in $set
   assignTasks.findByIdAndUpdate(id, { $set: { owner: req.user } }, function (
     err
   ) {
@@ -214,13 +223,12 @@ app.post("/addtask", function (req, res) {
   res.redirect(307, "/todoApp");
 });
 
-
-/* Removes all the tasks for user that are checked */
+/* Removes all the tasks for user that have checked them */
 app.post("/purge", function (req, res) {
   assignTasks.updateMany(
     { owner: req.user, done: true },
     { $set: { cleared: true } },
-    function (err, docs) {
+    function (err) {
       if (err) {
         console.log(err);
       } else {
@@ -230,9 +238,10 @@ app.post("/purge", function (req, res) {
   );
 });
 
-
 /* Login functionality */
 app.post("/login", function (req, res, next) {
+  //authenticate()'s function signature is standard Connect middleware,
+  //which makes it convenient to use as route middleware in Express applications
   passport.authenticate("local", function (err, user, info) {
     if (err) {
       return next(err);
@@ -249,7 +258,6 @@ app.post("/login", function (req, res, next) {
     });
   })(req, res, next);
 });
-
 
 /* Logout functionality */
 app.get("/logout", function (req, res) {

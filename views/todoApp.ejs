@@ -89,7 +89,7 @@
       <div>
         <div id="todoList">   
           <% for(var counter = 0; counter < dbTasks.length; counter++) { %>
-            <%- include('./partials/todo-item.ejs', {task: dbTasks[counter], email: email}) %>
+            <%- include('./partials/todoRoutes.ejs', {task: dbTasks[counter], email: email}) %>
             <%}%>
         </div>
         <form method="POST" action="/addtask">
