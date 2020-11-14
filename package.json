@@ -1,7 +1,7 @@
 {
-  "name": "controller",
+  "name": "model",
   "version": "1.0.0",
-  "description": "lab controller",
+  "description": "lab model",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AliHaidry/controller.git"
+    "url": "git+https://github.com/AliHaidry/model.git"
   },
   "author": "Syed Muhammad Ali Haidry",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/AliHaidry/controller/issues"
+    "url": "https://github.com/AliHaidry/model/issues"
   },
-  "homepage": "https://github.com/AliHaidry/controller#readme",
+  "homepage": "https://github.com/AliHaidry/model#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
     "consolidate": "^0.16.0",
