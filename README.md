@@ -1,5 +1,5 @@
 ### ControllerLab
-This is an progression lab ! Continuing from View -> Controller that is related to MVC architecture.
+This is an progression lab ! Continuing from Controller -> Model that is related to MVC architecture.
 
 ### Functionalities Implemented
 > File to execute on the server is -> app.js
