@@ -1,4 +1,5 @@
-function Task(id, name, owner, creator, done, cleared) {
+// task manager
+function TaskManager(id, name, owner, creator, done, cleared) {
     this.id = id;
     this.name = name;
     this.owner = owner;
@@ -7,4 +8,4 @@ function Task(id, name, owner, creator, done, cleared) {
     this.cleared = cleared;
 }
 
-module.exports = Task;
+module.exports = TaskManager;

@@ -88,8 +88,8 @@
     <div class="container" id="todo-container">
       <div>
         <div id="todoList">   
-          <% for(var i = 0; i < taskDatabase.length; i++) { %>
-            <%- include('./partials/todo-item.ejs', {task: taskDatabase[i], email: email}) %>
+          <% for(var counter = 0; counter < dbTasks.length; counter++) { %>
+            <%- include('./partials/todo-item.ejs', {task: dbTasks[counter], email: email}) %>
             <%}%>
         </div>
         <form method="POST" action="/addtask">
