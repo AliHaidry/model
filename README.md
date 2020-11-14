@@ -6,4 +6,5 @@ This is an progression lab ! Continuing from Controller -> Model that is related
 > Can be executed using the command -> npm start
 > Script is created in package.json
 > Port for server is -> 3000
-> Use this user as to check the functionality:
+> Created Schema using Mongoose
+> Managing routes with Mongoose 
