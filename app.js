@@ -16,7 +16,7 @@ app.set("view engine", "ejs");
 app.use(express.static("public"));
 const port = 3000;
 app.listen(port, function () {
-  console.log(" Server is active and running " + port);
+  console.log(" Server is active and running on port " + port);
 });
 
 // Init App
