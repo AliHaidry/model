@@ -1,4 +1,4 @@
-### ControllerLab
+### ModelLab
 This is an progression lab ! Continuing from Controller -> Model that is related to MVC architecture.
 
 ### Functionalities Implemented
